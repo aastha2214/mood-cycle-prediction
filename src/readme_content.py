@@ -9,7 +9,7 @@ _grp = [("Phase 1/2 inspection printouts (`inspect*.py`, `design_checks.py`)", [
         ("E2 Bayesian ridge and E3 Gaussian Bayes classifier", ["ext_E2_bayes_ridge.py", "ext_E3_gaussian_bayes.py"]), ("E1 PCA", ["ext_E1_pca.py"]), ("E4 prediction intervals", ["ext_E4_intervals.py"]), ("E5 ablation and learning curves", ["ext_E5_ablation_lc.py"]), ("train-versus-test overfitting check", ["ext_OF_train_test_gap.py"]), ("E7 cross-sample validation and distribution-shift analysis", ["ext_e7_cross_sample.py", "ext_e7_shift.py"])]
 _rt = "\n".join(f"| {nm} | {_cls(float(_t.reindex(ks).sum()))} |" for nm, ks in _grp if len(_t.reindex(ks).dropna()))
 _tot = float(_t.sum()); _lo = int(_tot // 60 // 5 * 5); _hi = _lo + 5
-_nq = int(pd.Series(V).str.startswith("**Q").sum())
+_nw = const('src/cvlib.py', r'def lopo\([^)]*n_jobs=(\d+)', 'parallel workers (default of the leave-one-woman-out loop)'); _wk = 'worker' if _nw == '1' else 'workers'
 _sm = SUMMARY.split("\n"); _q = next(l for l in _sm if l.startswith("**The question.**")).split(" Data:")[0].replace("**The question.**", "**Question.**"); _items = [l[3:] for l in _sm if l[:3] in ("1. ", "2. ", "3. ")]
 _findings = "\n".join("- " + x for x in _items)
 R_ = f"""# Mood Prediction from Menstrual Cycle Data: Ridge Regression, Optimization and Bayesian Methods from Scratch
@@ -30,7 +30,7 @@ python3 -m venv .venv                      # Python {calc('python major', _sys.v
 bash run_all.sh                            # everything; between {calc('runtime lower bound (min)', _lo, '{:.0f}', 'docs/runtime_reference.csv', 'floor(total seconds / 60 / 5) * 5')} and {calc('runtime upper bound (min)', _hi, '{:.0f}', 'docs/runtime_reference.csv', 'lower bound + 5')} minutes on the author's laptop
 ./.venv/bin/streamlit run app/app.py       # optional demo app (reads the results written by run_all.sh)
 ```
-`run_all.sh` verifies the four data files against `data/MANIFEST.md` (SHA-256; it downloads them from OSF only if missing, via `src/download_data.py`), runs every step with `python -I`, writes one log per step to `results/logs/` and the seconds per step to `results/logs/timings.csv`, rebuilds the documents and finally audits them. It stops at the first failing step. All randomness uses seed **{calc('random seed', SEED, '{:.0f}', 'src/data.py', 'SEED')}** (`src/data.py`); joblib uses {const('src/cvlib.py', r'n_jobs=(\d+)', 'parallel workers')} parallel workers (the number of workers does not change any result, because every fold has its own fixed seed).
+`run_all.sh` verifies the four data files against `data/MANIFEST.md` (SHA-256; it downloads them from OSF only if missing, via `src/download_data.py`), runs every step with `python -I`, writes one log per step to `results/logs/` and the seconds per step to `results/logs/timings.csv`, rebuilds the documents and finally audits them. It stops at the first failing step. All randomness uses seed **{calc('random seed', SEED, '{:.0f}', 'src/data.py', 'SEED')}** (`src/data.py`); joblib uses {_nw} parallel {_wk} (the number of {_wk} does not change any result, because every fold has its own fixed seed).
 
 **Reproducibility.** `bash check_reproducible.sh` copies the generated results and documents, deletes them, re-runs `run_all.sh` from scratch and compares every file byte for byte (logs and timings excluded); it prints the number of identical and of different files.
 
@@ -41,12 +41,14 @@ The raw data are public (OSF project `dmhrw`, Pletzer & Noachtar 2023) and are k
 3. *Verify:* `cd data && shasum -a 256 -c MANIFEST.md` (macOS) or `sha256sum -c MANIFEST.md` (Linux); every line must report OK. `data/MANIFEST.md` lists the SHA-256 checksum of each file.
 
 ## Run everything
-`bash run_all.sh` (after the environment and the data are in place, see Quick start) reruns every script with the fixed seed and rebuilds `docs/report.md`, `docs/numbers_provenance.md`, `docs/viva_qa.md`, `results/INDEX.md` and this README. `bash check_reproducible.sh` additionally checks that a rerun reproduces every file byte for byte.
+`bash run_all.sh` (after the environment and the data are in place, see Quick start) reruns every script with the fixed seed and rebuilds `docs/report.md`, `docs/numbers_provenance.md`, `results/INDEX.md` and this README. `bash check_reproducible.sh` additionally checks that a rerun reproduces every file byte for byte.
 
 ## Demo app
 After `bash run_all.sh` (the app reads only the saved files in `results/` and `app/model_artifacts.json`): `streamlit run app/app.py`. To skip Streamlit's first-run prompt and its usage statistics add `--server.headless true --browser.gatherUsageStats false`. `app/build_model.py` refits the final model to `app/model_artifacts.json`, `app/test_app.py` runs headless tests; see `app/README.md`. The values entered in the app are not stored or sent anywhere.
 
-## Approximate runtimes (classes derived from the reference timings in `docs/runtime_reference.csv`, measured once on the author's laptop while other programs were running, so a quiet machine may be faster; the seconds of your own run are written to `results/logs/timings.csv`)
+## Approximate runtimes
+The classes below are derived from the reference timings in `docs/runtime_reference.csv`, measured once on the author's laptop while other programs were running, so a quiet machine may be faster; the seconds of your own run are written to `results/logs/timings.csv`.
+
 | Step | Runtime |
 |---|---|
 {_rt}
@@ -55,17 +57,16 @@ After `bash run_all.sh` (the app reads only the saved files in `results/` and `a
 | Path | Content |
 |---|---|
 | `docs/report.md` | **the report**: Summary of findings, Abstract, Introduction, Data, Methods, Results (including the train-versus-test table in 4.2), Discussion, Limitations, Conclusion, and the extensions E1 to E5 and E7 as sections 8.1 to 8.6. Every number is loaded from `results/*.csv` or the data when the file is built. |
-| `docs/numbers_provenance.md` | maps every number in the report, the viva file and this README to its source file, selection, column and script |
-| `docs/viva_qa.md` (written locally by the pipeline; not included in the repository) | {calc('number of viva questions', _nq, '{:.0f}', 'docs/viva_qa.md', 'count of questions in the generated file')} viva questions with simple-language answers (core questions plus those for the extensions and the overfitting check), numbers loaded as above |
-| `results/numbers_audit.md` | automatic audit: every numeric token in the three documents is either a logged value or a listed structural token |
+| `docs/numbers_provenance.md` | maps every number in the report and this README to its source file, selection, column and script |
+| `results/numbers_audit.md` | automatic audit: every numeric token in the report and in this README is either a logged value or a listed structural token |
 | `docs/math/` | one note per maths-core item (3a to 3e) and per extension (`E1_pca.md`, `E2_bayesian_ridge.md`, `E3_gaussian_bayes_classifier.md`, `E4_prediction_intervals.md`, `E5_ablation_and_learning_curves.md`, `E7_cross_sample.md`) |
 | `results/INDEX.md` | key figures and tables; `results/fig_*.png`, `results/*.csv`, `results/phase*_tables.md` |
 | `src/` | code: `data.py`, `mathcore/` (from-scratch NumPy ridge and optimisers), `cvlib.py` / `cvclf.py` (leave-one-woman-out with nested CV), `extlib.py` / `evalutils.py` (bootstraps), `phase*.py`, `ext_*.py` (extensions), `report_lib.py` / `build_report.py` / `viva_content.py` / `readme_content.py` / `audit_numbers.py` (documents) |
 | `data/` | the four OSF files and `MANIFEST.md` (SHA-256) |
 
 ## Checked results versus working notes
-*Checked* (written by scripts from saved results, covered by the number audit): `docs/report.md`, `docs/viva_qa.md`, `docs/numbers_provenance.md`, this README, `results/*.csv`, the figures, `results/phase4_tables.md`, `results/phase5_tables.md`, `results/INDEX.md`.
-*Working notes* (written by hand from printed output; numbers not machine-checked, the report supersedes them; the per-phase result notes are kept locally and are not part of the repository): `docs/data_dictionary.md`, `docs/design.md`, `docs/leakage_checklist.md`, `docs/cross_dataset_candidates.md` (web research on possible second datasets, not machine-checked) and the maths-core notes `docs/math/3a_ridge_closed_form.md` to `docs/math/3e_map_gaussian_prior.md`. All of these carry the header line "Working notes: the checked numbers are in docs/report.md"; the extension notes `docs/math/E1_*.md` to `E5_*.md` carry it too but contain no results.
+*Checked* (written by scripts from saved results, covered by the number audit): `docs/report.md`, `docs/numbers_provenance.md`, this README, `results/*.csv`, the figures, `results/phase4_tables.md`, `results/phase5_tables.md`, `results/INDEX.md`.
+*Working notes* (written by hand from printed output; numbers not machine-checked, the report supersedes them): `docs/data_dictionary.md`, `docs/design.md`, `docs/leakage_checklist.md`, `docs/cross_dataset_candidates.md` (web research on possible second datasets, not machine-checked) and the maths-core notes `docs/math/3a_ridge_closed_form.md` to `docs/math/3e_map_gaussian_prior.md`. All of these carry the header line "Working notes: the checked numbers are in docs/report.md"; the extension notes `docs/math/E1_*.md` to `E5_*.md` carry it too but contain no results.
 
 ## Main results (details, intervals and sample sizes in `docs/report.md`)
 - On {nn('pooled')}, adding hormones to cycle phase improved out-of-sample prediction in {n_ca_better} of {n_ca_all} paired comparisons and made it worse in {n_ca_worse}; questionnaires (BDI, BAI) and the woman's own history were far more informative.

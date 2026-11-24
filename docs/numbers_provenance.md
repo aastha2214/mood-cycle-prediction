@@ -2,7 +2,7 @@
 
 Written by `src/build_report.py` at the same time as `docs/report.md` and `docs/viva_qa.md`: **every number is loaded through a helper that logs where it came from**, so this list cannot drift from the documents. Selections are `column == value` filters on the named file (exactly one row each unless the kind says aggregate). Re-running `./run_all.sh` regenerates the files, the documents and this list. Authors' numbers are constants in `src/authors_reference.py` (reference only, labelled in the report).
 
-Number of logged individual values: 2329; tables: 32.
+Number of logged individual values: 2328; tables: 32.
 
 ## A. Individual numbers
 
@@ -2423,12 +2423,11 @@ Number of logged individual values: 2329; tables: 32.
 
 | Quantity | Value shown | Source file | Selection | Column(s) | Produced by |
 |---|---|---|---|---|---|
+| parallel workers (default of the leave-one-woman-out loop) | 10 | `src/cvlib.py` | regex def lopo\([^)]*n_jobs=(\d+) | - | `src/cvlib.py` |
 | python major | 3 | `python runtime` | sys.version_info.major | - | `src/build_report.py (computation from the source named)` |
 | python minor | 12 | `python runtime` | sys.version_info.minor | - | `src/build_report.py (computation from the source named)` |
 | runtime lower bound (min) | 30 | `docs/runtime_reference.csv` | floor(total seconds / 60 / 5) * 5 | - | `src/build_report.py (computation from the source named)` |
 | runtime upper bound (min) | 35 | `docs/runtime_reference.csv` | lower bound + 5 | - | `src/build_report.py (computation from the source named)` |
-| parallel workers | 1 | `src/cvlib.py` | regex n_jobs=(\d+) | - | `src/cvlib.py` |
-| number of viva questions | 58 | `docs/viva_qa.md` | count of questions in the generated file | - | `src/build_report.py (computation from the source named)` |
 
 ## B. Tables (every cell is read from the listed files)
 
