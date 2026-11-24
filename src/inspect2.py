@@ -1,0 +1,17 @@
+import pyreadstat, pandas as pd, numpy as np
+pd.set_option("display.width",220); pd.set_option("display.max_columns",50)
+m,_=pyreadstat.read_sav("data/RV20_Mood_MC_20230519.sav")
+q,_=pyreadstat.read_sav("data/RV20_Questionnaires_MC_20230519.sav")
+e,_=pyreadstat.read_sav("data/RV20_EmotionRecognition_MC_20230519.sav",usecols=None)
+print("MOOD rows",len(m),"VPN",m.VPN.nunique()); print(m.groupby("Valence").size().to_dict())
+print(m[["VPN","Session","Phase","include","Version","Valence","Affect","DRSP_avg","STAI","estradiol","progesterone","cycle_day_forward"]].head(8))
+print("Session x Phase\n",pd.crosstab(m.Session,m.Phase.fillna(-1)))
+print("Version",m.groupby("Version").VPN.nunique().to_dict(),"include",m.groupby("include").VPN.nunique().to_dict())
+print("sessions per VPN (mood, unique)\n",m.groupby("VPN").Session.nunique().value_counts().to_dict())
+print("QUEST rows",len(q),"VPN",q.VPN.nunique(),"dup (VPN,Session):",q.duplicated(["VPN","Session"]).sum())
+print("sessions/VPN",q.groupby("VPN").Session.nunique().value_counts().to_dict())
+print(pd.crosstab(q.Version,q.Session)); print(pd.crosstab(q.Session,q.Phase)); print(pd.crosstab(q.include,q.includeNC3all))
+print(q.groupby("Version").VPN.nunique())
+cols=["estradiol","progesterone","BDI_RW","BAI_RW","PMS","DRSP","DRSP_psychisch","DRSP_physisch","DRSP_physical","PANAS_pos","PANAS_neg","Affect_pos","Affect_neg","STAI","cycle_day_forward","cycle_day_backward","Age"]
+print(q[cols].describe().T[["count","mean","std","min","50%","max"]])
+print("ER rows",len(e),"VPN",e.VPN.nunique()); print([c for c in e.columns][:60])

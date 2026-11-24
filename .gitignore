@@ -1,0 +1,40 @@
+# environments and caches
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.ipynb_checkpoints/
+.repro_snapshot/
+.streamlit/secrets.toml
+
+# logs (run_all.sh writes them to results/logs/)
+*.log
+results/logs/
+
+# secrets and local settings
+.env
+.env.*
+*.env
+
+# scratch, backup and duplicate files
+scratch/
+backup/
+*.bak
+*.orig
+*.tmp
+*.swp
+*~
+*_backup.*
+*_copy.*
+* copy.*
+
+# raw data files (public OSF files; download them with src/download_data.py). The manifest stays in the repository.
+data/*.sav
+data/*.R
+!data/MANIFEST.md
+
+# notes that are not part of the repository
+docs/viva_qa.md
+docs/phase4_results.md
+docs/phase5_results.md
+docs/phase6_results.md

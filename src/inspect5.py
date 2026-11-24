@@ -1,0 +1,25 @@
+import pyreadstat, pandas as pd, numpy as np
+pd.set_option("display.width",200)
+q,_=pyreadstat.read_sav("data/RV20_Questionnaires_MC_20230519.sav")
+m,_=pyreadstat.read_sav("data/RV20_Mood_MC_20230519.sav")
+q["nsess"]=q.groupby("VPN").Session.transform("nunique")
+i=q[q.include==1].copy()
+i["sample"]=np.where(i.groupby("VPN").Session.transform("nunique")>1,"longitudinal","cross-sectional")
+# nsess after filter
+print("nsess within filtered data:",i.groupby("VPN").size().value_counts().to_dict())
+i["ph"]=i.Phase.map({0:"menses",1:"periov",2:"luteal"})
+print("ROWS\n",pd.crosstab(i["sample"],i.ph,margins=True))
+print("WOMEN\n",i.groupby("sample").VPN.nunique().to_dict(),"total",i.VPN.nunique())
+print("WOMEN per phase\n",i.groupby(["sample","ph"]).VPN.nunique().unstack())
+print("long women by #sessions kept:",i[i["sample"]=="longitudinal"].groupby("VPN").size().value_counts().to_dict())
+# sample using unfiltered nsess (before include)
+print("unfiltered nsess of included women:",i.groupby("VPN").nsess.first().value_counts().to_dict())
+print("long women with all 3 phases:",(i[i["sample"]=="longitudinal"].groupby("VPN").Phase.nunique()==3).sum())
+print("cross VPN in 400s:",sorted(i[(i['sample']=='cross-sectional')&(i.VPN<500)].VPN.unique().astype(int)))
+print("long VPN max",i[i['sample']=='longitudinal'].VPN.max())
+print("authors rule: long=VPN 401-499 incl:",i[(i.VPN>400)&(i.VPN<500)].VPN.nunique(),"women",len(i[(i.VPN>400)&(i.VPN<500)]),"rows; cross=Session1:",(i.Session==1).sum(),"rows")
+# 12 mismatches
+a=m[m.Valence==0][["VPN","Session","Phase","cycle_day_forward"]].merge(q[["VPN","Session","Phase","cycle_day_forward","include"]],on=["VPN","Session"],suffixes=("_mood","_q"))
+d=a[a.Phase_mood.fillna(-1)!=a.Phase_q]
+print(len(d),"mismatches; mood NaN:",d.Phase_mood.isna().sum()); print(d.to_string(index=False))
+print("mood rows without Q row:",set(map(tuple,m[m.Valence==0][["VPN","Session"]].values))-set(map(tuple,q[["VPN","Session"]].values)))

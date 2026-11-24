@@ -1,0 +1,3 @@
+direction,train_rows,train_women,test_rows,test_women,women_in_both
+cross_to_long,95,95,176,65,0
+long_to_cross,176,65,95,95,0

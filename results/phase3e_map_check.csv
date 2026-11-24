@@ -1,0 +1,2 @@
+sample,n_rows,n_women,target,lam,n_times_lam,tau2,sigma2,max_abs_grad_neg_log_posterior
+pooled,271,160,drsp_psych,0.1,27.1,2.0,54.2,1.7708057242771247e-14

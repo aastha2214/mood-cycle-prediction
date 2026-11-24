@@ -1,0 +1,10 @@
+> **Working notes: the checked numbers are in docs/report.md**
+
+# E5  Ablation study and learning curves
+Code: `src/ext_E5_ablation_lc.py`. Results: `results/extE5_*.csv`, `results/fig_E5_*.png`; report section 8.5.
+
+**Ablation (drop one group).** Take the full feature set D = phase + hormones + PSST + BDI + BAI. For each group, refit the whole pipeline (including nested hyper-parameter choice) without it and compare the out-of-sample error with the full model, using the same women in every bootstrap resample. Change in RMSE = RMSE(without group) - RMSE(full): positive = the group helped; negative = the model was better without it (the group added noise). We also fit each group **alone**. Both views are needed: when two groups carry overlapping information (BDI and BAI are correlated), dropping one costs little because the other covers for it ("shared credit"), while using it alone looks strong. Ablation answers "what does this group add to the others?", not "how much does it explain by itself?".
+
+**Learning curve.** Train on k randomly chosen women (other than the one held out), test on the held-out woman, repeat for every woman and several k. Plot test performance (R2 versus the mean baseline trained on the same k women) and training R2 against k. Typical shapes: with few women the model overfits (high training R2, low or negative test R2); as k grows the two curves approach each other. A test curve that has flattened says that more women of the same kind would add little for this model; a rising curve says more data would help. The sets differ in how many parameters they must learn, so they flatten at different k. The last point (k = all other women) equals the Phase 4 leave-one-woman-out result (checked numerically).
+
+**Uncertainty.** Each point has a 95% interval from resampling the held-out women; the random choice of the k training women is fixed by a seed per (woman, k), so the curves are reproducible but one random draw: small differences between neighbouring points are noise. Extrapolating beyond the largest k is not justified.

@@ -1,0 +1,36 @@
+sample,n_rows,n_women,outcome,test,stat,perm_p,B
+long,176,65,pos_affect,phase omnibus F (within-woman),8.08440496957555,0.0005998800239952009,5000
+long,176,65,neg_affect,phase omnibus F (within-woman),2.831039181359421,0.0597880423915217,5000
+long,176,65,drsp_psych,phase omnibus F (within-woman),18.127875658806907,0.0001999600079984003,5000
+long,176,65,drsp_total,phase omnibus F (within-woman),27.148041273613966,0.0001999600079984003,5000
+long,176,65,stai,phase omnibus F (within-woman),3.4342575406968208,0.03159368126374725,5000
+long,176,65,pos_affect,E2 within-woman slope (|slope|),0.27927351369393283,0.004999000199960008,5000
+long,176,65,neg_affect,E2 within-woman slope (|slope|),-0.20783491849965843,0.132373525294941,5000
+long,176,65,drsp_psych,E2 within-woman slope (|slope|),-0.4824491362391787,0.0001999600079984003,5000
+long,176,65,drsp_total,E2 within-woman slope (|slope|),-0.5304924219744804,0.0001999600079984003,5000
+long,176,65,stai,E2 within-woman slope (|slope|),-0.25571964383216383,0.013797240551889621,5000
+long,176,65,pos_affect,E2 between-woman slope on woman means (|slope|),-0.0838228654527613,0.5018996200759848,5000
+long,176,65,neg_affect,E2 between-woman slope on woman means (|slope|),-0.038507134596547005,0.745250949810038,5000
+long,176,65,drsp_psych,E2 between-woman slope on woman means (|slope|),-0.04280895318257048,0.7166566686662668,5000
+long,176,65,drsp_total,E2 between-woman slope on woman means (|slope|),-0.026280997519834117,0.8260347930413917,5000
+long,176,65,stai,E2 between-woman slope on woman means (|slope|),0.0098472611165634,0.9386122775444911,5000
+pooled,271,160,pos_affect,"phase omnibus F (ordinary F, stratified perms)",4.5615470961570095,0.0021995600879824036,5000
+pooled,271,160,neg_affect,"phase omnibus F (ordinary F, stratified perms)",1.2636255274877097,0.1905618876224755,5000
+pooled,271,160,drsp_psych,"phase omnibus F (ordinary F, stratified perms)",8.572745338225914,0.0003999200159968006,5000
+pooled,271,160,drsp_total,"phase omnibus F (ordinary F, stratified perms)",14.945976238900629,0.0001999600079984003,5000
+pooled,271,160,stai,"phase omnibus F (ordinary F, stratified perms)",0.11704896455296623,0.8318336332733454,5000
+pooled,271,160,pos_affect,"phase Wald chi2 of the mixed model, stratified perms",16.784847442786393,0.000999000999000999,1000
+pooled,271,160,neg_affect,"phase Wald chi2 of the mixed model, stratified perms",4.758144538424184,0.10789210789210789,1000
+pooled,271,160,drsp_psych,"phase Wald chi2 of the mixed model, stratified perms",36.29465740508742,0.000999000999000999,1000
+pooled,271,160,drsp_total,"phase Wald chi2 of the mixed model, stratified perms",58.75255881362091,0.000999000999000999,1000
+pooled,271,160,stai,"phase Wald chi2 of the mixed model, stratified perms",2.722758188759536,0.27172827172827174,1000
+pooled,271,160,pos_affect,E2 within-woman slope (|slope|),0.2940664605433118,0.005398920215956809,5000
+pooled,271,160,neg_affect,E2 within-woman slope (|slope|),-0.22706098074569928,0.14077184563087383,5000
+pooled,271,160,drsp_psych,E2 within-woman slope (|slope|),-0.513908546301176,0.0001999600079984003,5000
+pooled,271,160,drsp_total,E2 within-woman slope (|slope|),-0.5574212885699785,0.0001999600079984003,5000
+pooled,271,160,stai,E2 within-woman slope (|slope|),-0.2714113427466662,0.013997200559888023,5000
+pooled,271,160,pos_affect,E2 between-woman slope on woman means (|slope|),0.052405859211473615,0.4901019796040792,5000
+pooled,271,160,neg_affect,E2 between-woman slope on woman means (|slope|),-0.03267489249886432,0.6416716656668666,5000
+pooled,271,160,drsp_psych,E2 between-woman slope on woman means (|slope|),-0.008726371358847403,0.8980203959208158,5000
+pooled,271,160,drsp_total,E2 between-woman slope on woman means (|slope|),-0.019636894999952748,0.7954409118176364,5000
+pooled,271,160,stai,E2 between-woman slope on woman means (|slope|),0.02656155222210391,0.7280543891221756,5000

@@ -1,0 +1,7 @@
+sample,target,n_rows,n_women,ICC_anova,ICC_reml,ci_lo,ci_hi
+pooled,pos_affect,271,160,0.369,0.393,0.19,0.535
+pooled,drsp_psych,271,160,0.311,0.353,0.125,0.454
+pooled,stai,271,160,0.515,0.522,0.337,0.659
+long,pos_affect,176,65,0.431,0.431,0.234,0.567
+long,drsp_psych,176,65,0.393,0.393,0.199,0.534
+long,stai,176,65,0.57,0.567,0.417,0.707
