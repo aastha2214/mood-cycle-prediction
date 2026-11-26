@@ -1,5 +1,7 @@
 # Mood Prediction from Menstrual Cycle Data: Ridge Regression, Optimization and Bayesian Methods from Scratch
 
+Live demo: https://mood-cycle-prediction.streamlit.app
+
 **Question.** Mood is often said to follow the menstrual cycle. This project asks a practical version: if we know a woman's cycle phase and the estradiol and progesterone in her saliva, can we predict her mood better than by simply guessing the average, for a woman the model has never seen?
 - *Hormones add nothing to cycle phase for unseen women.* Of 27 paired comparisons (phase + hormones versus phase alone) 0 showed an improvement and 15 were worse; the smallest uncorrected p-value for an improvement was 0.334.
 - *Phase alone helps only a little, and only for premenstrual symptoms.* Share of the error removed compared with guessing the average (ridge, pooled): DRSP psychological symptoms +0.051 [+0.005, +0.095], positive affect +0.021 [-0.009, +0.051], state anxiety -0.001 [-0.001, -0.000].
