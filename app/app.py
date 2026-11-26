@@ -1,77 +1,103 @@
-"""E6: educational Streamlit demo. Start from the project root:  streamlit run app/app.py
-Educational demo, not medical advice. Nothing the user enters is stored, logged or sent anywhere; the app reads only app/model_artifacts.json (the fitted final model, built by app/build_model.py)
-and the saved result files in results/ (every statistic shown is loaded from them)."""
-import json
-from pathlib import Path
+"""Course-project demo (Streamlit). Start from the project root:  streamlit run app/app.py
+Reads app/model_artifacts.json (fitted final model, built by app/build_model.py) and the saved result files in results/. Nothing the user enters is stored or sent anywhere."""
+import sys; from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import numpy as np, pandas as pd, streamlit as st
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-HERE = Path(__file__).resolve().parent; ROOT = HERE.parent
-TN = {"pos_affect": "Positive affect", "drsp_psych": "DRSP psychological symptoms", "stai": "State anxiety"}; PHASES = ["menses", "peri-ovulatory", "luteal"]
-st.set_page_config(page_title="Mood prediction demo (educational)", layout="wide")
+import app_core as C
 
-@st.cache_data
-def load_all():
-    need = {"art": HERE / "model_artifacts.json", "m4": ROOT / "results/phase4_metrics.csv", "d4": ROOT / "results/phase4_deltas.csv", "cov": ROOT / "results/extE4_coverage.csv", "e7": ROOT / "results/ext_e7_metrics.csv", "e7h": ROOT / "results/ext_e7_hormone_tests.csv", "e7s": ROOT / "results/ext_e7_sizes.csv"}
-    missing = [str(p.relative_to(ROOT)) for p in need.values() if not p.exists()]
-    if missing: return None, missing
-    out = {"art": json.loads(need["art"].read_text())}; out.update({k: pd.read_csv(p) for k, p in need.items() if k != "art"}); return out, []
-R, missing = load_all()
+st.set_page_config(page_title="Mood prediction demo", layout="wide")
+R, missing = st.cache_data(C.load_results)()
 st.title("Mood prediction from cycle phase, hormones and questionnaires")
-st.caption("Learning project built on one open research dataset.")
 if missing:
     st.warning("Saved result files are missing: " + ", ".join(missing) + ". Run `bash run_all.sh` and `./.venv/bin/python -I app/build_model.py` first."); st.stop()
-A, m4, d4, cov, e7, e7h, e7s = R["art"], R["m4"], R["d4"], R["cov"], R["e7"], R["e7h"], R["e7s"].set_index("direction"); T = A["targets"]; IN = A["inputs"]
-mu, sd, zm = (np.array(A[k]) for k in ["mu", "sd", "zm"])
-def predict(t, phase, e2, p, pms, bdi, bai):
-    """Ridge point prediction and Bayesian ridge predictive mean/sd, same transforms as in the validation (log1p, standardise with training statistics)."""
-    x = np.array([phase == "peri-ovulatory", phase == "luteal", np.log1p(e2), np.log1p(p), pms, bdi, bai], float); z = (x - mu) / sd - zm; M = T[t]
-    ridge = float(z @ np.array(M["w"]) + M["ybar"]); mean_b = float(z @ np.array(M["m"]) + M["ybar"]); sd_b = float(np.sqrt(1.0 / M["beta"] + z @ np.array(M["S"]) @ z)); return ridge, mean_b, sd_b
-# ------------------------------------------------------------------ sidebar inputs (ranges from the data)
-st.sidebar.header("Inputs (kept in memory only)")
-phase = st.sidebar.selectbox("Cycle phase", PHASES, index=0)
-e2 = st.sidebar.slider("Estradiol (saliva, pg/ml)", IN["estradiol"]["min"], IN["estradiol"]["max"], IN["estradiol"]["median"], step=IN["estradiol"]["max"] / 200)
-pg = st.sidebar.slider("Progesterone (saliva, pg/ml)", IN["progesterone"]["min"], IN["progesterone"]["max"], IN["progesterone"]["median"], step=IN["progesterone"]["max"] / 200)
-pms = st.sidebar.slider("PSST score (premenstrual symptoms screening)", int(IN["PMS"]["min"]), int(IN["PMS"]["max"]), int(round(IN["PMS"]["median"])))
-bdi = st.sidebar.slider("BDI score (depressive symptoms)", int(IN["BDI_RW"]["min"]), int(IN["BDI_RW"]["max"]), int(round(IN["BDI_RW"]["median"])))
-bai = st.sidebar.slider("BAI score (anxiety symptoms)", int(IN["BAI_RW"]["min"]), int(IN["BAI_RW"]["max"]), int(round(IN["BAI_RW"]["median"])))
-st.sidebar.caption(f"Slider ranges are the minimum and maximum in the {A['n_rows']} sessions of {A['n_women']} women used to fit the model; the starting values are the medians. Entries outside such ranges would be extrapolation.")
-# ------------------------------------------------------------------ predictions with saved validation numbers
-lvl = int(round(100 * A["level"])); rows = []; plot = []
-for t in T:
-    ridge, mean_b, sd_b = predict(t, phase, e2, pg, pms, bdi, bai); lo, hi = mean_b - A["z_level"] * sd_b, mean_b + A["z_level"] * sd_b
-    mm = m4[(m4["sample"] == "pooled") & (m4.target == t) & (m4.model == "ridge") & (m4.fset == "D")].iloc[0]; plot.append((t, ridge, mean_b, lo, hi, T[t]["ybar"]))
-    rows.append({"Target": TN[t], "Ridge prediction": f"{ridge:.2f}", "Bayesian predictive mean": f"{mean_b:.2f}", f"{lvl}% prediction interval": f"{lo:.2f} to {hi:.2f}", "Training-mean baseline": f"{T[t]['ybar']:.2f}",
-                 "Test R2 [95% CI] (leave-one-woman-out)": f"{mm.R2:+.3f} [{mm.R2_lo:+.3f}, {mm.R2_hi:+.3f}]", "Test R2 vs baseline [95% CI]": f"{mm.R2_oos:+.3f} [{mm.R2_oos_lo:+.3f}, {mm.R2_oos_hi:+.3f}]", "Observed range in the data": f"{T[t]['obs_min']:.2f} to {T[t]['obs_max']:.2f}"})
-st.subheader("Predictions for the entered values")
-st.table(pd.DataFrame(rows).set_index("Target"))   # HTML table: wraps text and fits the page width, so the last column needs no horizontal scrolling
-nw, nr = int(mm.n_women), int(mm.n_rows)
-st.caption(f"Model: ridge regression (lambda chosen by nested cross-validation) and Bayesian ridge (E2), full feature set D, fitted on all {A['n_women']} women ({A['n_rows']} sessions). Test R2 values come from leave-one-woman-out validation on {nw} women ({nr} sessions), loaded from results/phase4_metrics.csv. The two predictions are almost identical by construction; the interval belongs to the Bayesian one and describes a single new session.")
-# ------------------------------------------------------------------ chart
-fig, axes = plt.subplots(len(plot), 1, figsize=(8, 1.7 * len(plot) + 0.9))
-for ax, (t, ridge, mean_b, lo, hi, base) in zip(np.atleast_1d(axes), plot):
-    ax.axvspan(T[t]["obs_min"], T[t]["obs_max"], color="#EEEEEE", zorder=0); ax.axvline(base, color="#888888", ls="--", lw=1.2, label="training-mean baseline")
-    ax.errorbar([mean_b], [0], xerr=[[mean_b - lo], [hi - mean_b]], fmt="o", color="#0072B2", capsize=5, lw=2, label=f"Bayesian mean and {lvl}% interval"); ax.plot([ridge], [0], "D", color="#D55E00", ms=6, label="ridge prediction")
-    ax.set_yticks([]); ax.set_title(TN[t], fontsize=10, loc="left"); ax.set_xlim(min(T[t]["obs_min"], lo) - 0.05 * T[t]["obs_sd"], max(T[t]["obs_max"], hi) + 0.05 * T[t]["obs_sd"]); ax.grid(axis="x", alpha=.25)
-    for s in ["top", "right", "left"]: ax.spines[s].set_visible(False)
-np.atleast_1d(axes)[0].legend(frameon=False, fontsize=7, loc="upper right", ncol=1); fig.suptitle("Predictions with prediction intervals (grey band = range observed in the data)", fontsize=9); fig.tight_layout(); st.pyplot(fig); plt.close(fig)
-# ------------------------------------------------------------------ plain-language box
-nimp = int(((d4.comparison == "C vs A") & (d4.metric == "RMSE") & (d4.delta < 0) & (d4.hi < 0)).sum()); ntot = int(((d4.comparison == "C vs A") & (d4.metric == "RMSE")).sum()); nwor = int(((d4.comparison == "C vs A") & (d4.metric == "RMSE") & (d4.delta > 0) & (d4.lo > 0)).sum())
-bd = m4[(m4["sample"] == "pooled") & (m4.model == "ridge") & (m4.fset == "D") & (m4.target == "drsp_psych")].iloc[0]; ba = m4[(m4["sample"] == "pooled") & (m4.model == "ridge") & (m4.fset == "A") & (m4.target == "drsp_psych")].iloc[0]
-st.info(f"**What this demo can and cannot tell you.** This model predicts well only from questionnaire scores (BDI, BAI, PSST): for DRSP symptoms the test R2 with them is {bd.R2:+.3f}, with cycle phase alone {ba.R2:+.3f}. Hormone levels added no predictive value beyond cycle phase in this study: of {ntot} paired comparisons, {nimp} showed an improvement and {nwor} were worse. "
-        f"The model was validated on {nw} women from one open study (Pletzer and Noachtar, 2023), so it says nothing about other populations.")
-with st.expander("How wide and how reliable are the intervals? (E4 and E7)"):
-    c = cov[(cov.fset == "D") & (cov.method == "bayes_predictive") & (np.isclose(cov.level, A["level"]))]
-    for t in T:
-        a = c[(c["sample"] == "pooled") & (c.target == t)].iloc[0]; b = c[(c["sample"] == "cross2long") & (c.target == t)].iloc[0]
-        st.markdown(f"**{TN[t]}**: the {lvl}% interval has a mean width of {a.mean_width:.2f}, while the outcome's standard deviation is {T[t]['obs_sd']:.2f}, so the interval is wide. In leave-one-woman-out validation ({int(a.n_rows)} sessions, {int(a.n_women)} women) it covered {a.coverage:.3f} of the new sessions [{a.cov_lo:.3f}, {a.cov_hi:.3f}]. "
-                    f"When the model was trained on {int(e7s.loc['cross_to_long', 'train_women'])} women with one session and tested on a different group of women ({int(b.n_rows)} sessions, {int(b.n_women)} women), coverage was only {b.coverage:.3f} [{b.cov_lo:.3f}, {b.cov_hi:.3f}].")
-    st.markdown("Intervals are for a **single new session** and assume the new woman resembles the women in the study. Their coverage failed across the two groups of women (E4, E7), so do not treat them as guaranteed ranges.")
-    st.markdown("**Cross-sample transfer of the ridge model with questionnaires (E7, R2 against the training-group mean):**")
-    for t in T:
-        r1 = e7[(e7["sample"] == "cross_to_long") & (e7.target == t) & (e7.model == "ridge") & (e7.fset == "D")].iloc[0]; r2 = e7[(e7["sample"] == "long_to_cross") & (e7.target == t) & (e7.model == "ridge") & (e7.fset == "D")].iloc[0]
-        st.markdown(f"- {TN[t]}: trained on single-session women, tested on {int(r1.n_women)} longitudinal women: {r1.R2_oos:+.3f} [{r1.R2_oos_lo:+.3f}, {r1.R2_oos_hi:+.3f}]; trained on longitudinal women, tested on {int(r2.n_women)} single-session women: {r2.R2_oos:+.3f} [{r2.R2_oos_lo:+.3f}, {r2.R2_oos_hi:+.3f}].")
-with st.expander("What about the hormone inputs?"):
-    h = e7h[e7h.family == "C vs A"]
-    st.markdown(f"Hormones are inputs because the research question asked whether they help, and the answer in this study was no. Adding estradiol and progesterone to cycle phase improved out-of-sample prediction in {nimp} of {ntot} comparisons (leave-one-woman-out) and in {int(((h.p_improve_one_sided < 0.05) & (h.p_holm_all_improve < 0.05)).sum())} of {len(h)} comparisons across the two groups of women after Holm correction. Changing the hormone sliders therefore moves the prediction only by the small amount the fitted ridge assigns to them; see the report (section 4.2 and 8.6).")
-st.caption("Privacy: the values you enter are used only inside this browser session to compute the numbers above; the app writes no files, keeps no log and sends nothing anywhere. Research data stay on this computer.")
+art, TN = R["art"], C.TN; I = art["inputs"]; lvl = int(round(100 * art["level"])); P = C.presets(R)
+BLUE, ORANGE, GREY = "#0072B2", "#D55E00", "#888888"
+
+def apply_preset(prefix, name):
+    for k, v in P[name].items(): st.session_state[prefix + k] = v
+for prefix, name in [("", "typical menses"), ("a_", "typical menses"), ("b_", "typical luteal")]:
+    if prefix + "phase" not in st.session_state: apply_preset(prefix, name)
+
+def inputs(prefix, container):
+    """The six input widgets; values live in st.session_state under prefix + key."""
+    with container:
+        phase = st.selectbox("Cycle phase", C.PHASES, key=prefix + "phase")
+        e2 = st.slider("Estradiol (saliva, pg/ml)", I["estradiol"]["min"], I["estradiol"]["max"], step=I["estradiol"]["max"] / 200, key=prefix + "e2")
+        pg = st.slider("Progesterone (saliva, pg/ml)", I["progesterone"]["min"], I["progesterone"]["max"], step=I["progesterone"]["max"] / 200, key=prefix + "pg")
+        pms = st.slider("PSST score", int(I["PMS"]["min"]), int(I["PMS"]["max"]), key=prefix + "pms")
+        bdi = st.slider("BDI score", int(I["BDI_RW"]["min"]), int(I["BDI_RW"]["max"]), key=prefix + "bdi")
+        bai = st.slider("BAI score", int(I["BAI_RW"]["min"]), int(I["BAI_RW"]["max"]), key=prefix + "bai")
+    return dict(phase=phase, e2=e2, pg=pg, pms=pms, bdi=bdi, bai=bai)
+
+# ------------------------------------------------------------------ sidebar
+st.sidebar.markdown("**Predicts mood from cycle phase, saliva hormones and questionnaires, and shows what the study found.**")
+model = st.sidebar.radio("Model", C.MODELS, help="Point prediction and contributions use this model; the interval is the Bayesian predictive interval.")
+st.sidebar.markdown("Feature set: **D** (phase, estradiol, progesterone, PSST, BDI, BAI), fitted on " + f"{art['n_women']} women ({art['n_rows']} sessions). Sets A and C are not stored in the model file.")
+st.sidebar.caption("Slider ranges are the minimum and maximum observed in the data; start values are medians or typical values per phase.")
+
+tab_pred, tab_drv, tab_sweep, tab_cmp, tab_study = st.tabs(["Predict", "What drives the prediction", "Hormone sweep", "Compare scenarios", "Study results"])
+
+# ------------------------------------------------------------------ Predict
+with tab_pred:
+    st.info("Demo of a course project; not a medical or diagnostic tool. Intervals were roughly calibrated within the study but not across the two groups of women.")
+    cols = st.columns(3)
+    for c, name in zip(cols, P): c.button(name.capitalize(), on_click=apply_preset, args=("", name), use_container_width=True)
+    st.caption("Typical values: medians of the longitudinal women in that phase (hormones) and of all women (questionnaires). High scores: the largest PSST, BDI and BAI observed in the data.")
+    left, right = st.columns([1, 2]); v = inputs("", left)
+    with right:
+        cards = st.columns(3); fig, axes = plt.subplots(3, 1, figsize=(6, 3.6), sharex=False)
+        for c, ax, t in zip(cards, axes, art["targets"]):
+            M = art["targets"][t]; pt, lo, hi = C.point_and_interval(art, t, v, model)
+            c.metric(TN[t], f"{pt:.2f}", f"{pt - M['ybar']:+.2f} vs training mean {M['ybar']:.2f}", delta_color="off"); c.caption(f"{lvl}% prediction interval: {lo:.2f} to {hi:.2f}")
+            ax.axvspan(M["obs_min"], M["obs_max"], color="#EEEEEE", zorder=0); ax.axvline(M["ybar"], color=GREY, ls="--", lw=1.2, label="training mean")
+            ax.errorbar([pt], [0], xerr=[[pt - lo], [hi - pt]], fmt="o", color=BLUE, capsize=4, lw=2, label=f"prediction and {lvl}% interval")
+            ax.set_yticks([]); ax.set_title(TN[t], fontsize=8, loc="left"); ax.tick_params(labelsize=8); ax.grid(axis="x", alpha=.25); [ax.spines[s].set_visible(False) for s in ["top", "right", "left"]]
+            ax.set_xlim(min(M["obs_min"], lo) - 0.05 * M["obs_sd"], max(M["obs_max"], hi) + 0.05 * M["obs_sd"])
+        axes[0].legend(frameon=False, fontsize=7, loc="upper right"); fig.suptitle("Grey band: range observed in the data", fontsize=8); fig.tight_layout(); st.pyplot(fig); plt.close(fig)
+
+# ------------------------------------------------------------------ drivers
+with tab_drv:
+    t = st.selectbox("Target", list(TN), format_func=TN.get); M = art["targets"][t]; df = C.contributions(art, t, v, model); pt = C.point_and_interval(art, t, v, model)[0]
+    fig, ax = plt.subplots(figsize=(6, 3)); ax.barh(df.feature[::-1], df.contribution[::-1], color=[BLUE if x >= 0 else ORANGE for x in df.contribution[::-1]]); ax.axvline(0, color="#333", lw=.8)
+    ax.set_xlabel("contribution to this prediction, in the target's units", fontsize=8); ax.tick_params(labelsize=8); ax.grid(axis="x", alpha=.25); [ax.spines[s].set_visible(False) for s in ["top", "right"]]; fig.tight_layout(); st.pyplot(fig); plt.close(fig)
+    st.caption(f"Contribution = coefficient x standardized input. Training mean {M['ybar']:.2f} + sum of contributions {df.contribution.sum():+.2f} = prediction {pt:.2f} (inputs from the Predict tab, model: {model}).")
+
+# ------------------------------------------------------------------ sweep
+with tab_sweep:
+    fig, axes = plt.subplots(2, 3, figsize=(9, 4.4))
+    for j, t in enumerate(art["targets"]):
+        for i, (which, nm) in enumerate([("e2", "Estradiol (pg/ml)"), ("pg", "Progesterone (pg/ml)")]):
+            ax = axes[i, j]; s = C.sweep(art, t, v, which, model); ax.fill_between(s.x, s.lo, s.hi, color=BLUE, alpha=.15); ax.plot(s.x, s.pred, color=BLUE); ax.axhline(art["targets"][t]["ybar"], color=GREY, ls="--", lw=1)
+            ax.axvline(v[which], color=ORANGE, lw=1); ax.set_xlabel(nm, fontsize=8); ax.tick_params(labelsize=8); ax.grid(alpha=.25); [ax.spines[k].set_visible(False) for k in ["top", "right"]]
+            if i == 0: ax.set_title(TN[t], fontsize=8)
+    fig.tight_layout(); st.pyplot(fig); plt.close(fig)
+    sd_share, w_share = C.sweep_summary(art, v, model); hc = C.hormone_counts(R)
+    st.markdown(f"Everything else is held at the Predict-tab inputs (orange line); band = {lvl}% interval; dashed = training mean. With phase in the model the hormone line is nearly flat: across the whole observed hormone range the prediction moves by at most {100 * sd_share:.0f}% of the outcome's standard deviation, "
+                f"at most {100 * w_share:.0f}% of the interval width. In the study, adding the hormones to phase improved out-of-sample RMSE in {hc['better']} of {hc['total']} comparisons and made it worse in {hc['worse']}.")
+
+# ------------------------------------------------------------------ compare scenarios
+with tab_cmp:
+    ca, cb = st.columns(2); va, vb = {}, {}
+    for col, prefix, lab in [(ca, "a_", "Scenario A"), (cb, "b_", "Scenario B")]:
+        col.subheader(lab); col.selectbox("Start from", list(P), key=prefix + "preset", index=None, placeholder="choose a preset", on_change=lambda p=prefix: apply_preset(p, st.session_state[p + "preset"]))
+    va = inputs("a_", ca); vb = inputs("b_", cb); df = C.compare(art, va, vb, model)
+    st.table(pd.DataFrame({"Scenario A": [f"{r.a:.2f} ({r.a_lo:.2f} to {r.a_hi:.2f})" for r in df.itertuples()], "Scenario B": [f"{r.b:.2f} ({r.b_lo:.2f} to {r.b_hi:.2f})" for r in df.itertuples()], "Difference B - A": [f"{r.diff:+.2f}" for r in df.itertuples()]}, index=df.name))
+    fig, axes = plt.subplots(1, 3, figsize=(9, 2.3))
+    for ax, r in zip(axes, df.itertuples()):
+        ax.errorbar([0, 1], [r.a, r.b], yerr=[[r.a - r.a_lo, r.b - r.b_lo], [r.a_hi - r.a, r.b_hi - r.b]], fmt="o", color=BLUE, capsize=4); ax.axhline(art["targets"][r.target]["ybar"], color=GREY, ls="--", lw=1)
+        ax.set_xticks([0, 1], ["A", "B"]); ax.set_xlim(-.5, 1.5); ax.set_title(r.name, fontsize=8); ax.tick_params(labelsize=8); ax.grid(axis="y", alpha=.25); [ax.spines[k].set_visible(False) for k in ["top", "right"]]
+    fig.tight_layout(); st.pyplot(fig); plt.close(fig); st.caption(f"Points: predictions with {lvl}% intervals; dashed: training mean. Model: {model}.")
+
+# ------------------------------------------------------------------ study results
+with tab_study:
+    sample = {"Pooled": "pooled", "Longitudinal women": "long"}[st.radio("Sample", ["Pooled", "Longitudinal women"], horizontal=True)]
+    tab, nr, nw = C.r2_table(R, sample); st.markdown(f"**Out-of-sample R2 against the training mean** (ridge, leave-one-woman-out; {nr} sessions, {nw} women). A: phase; C: phase + hormones; D: C + PSST, BDI, BAI. [95% bootstrap CI over women]"); st.table(tab)
+    v_ = C.r2_values(R, sample); fig, ax = plt.subplots(figsize=(7, 2.6)); w = .25
+    for k, (fs, col) in enumerate(zip(["A", "C", "D"], [BLUE, "#009E73", ORANGE])):
+        q = v_[v_.fset == fs].set_index("target").loc[list(TN)]; ax.bar(np.arange(3) + (k - 1) * w, q.R2_oos, w, yerr=[q.R2_oos - q.R2_oos_lo, q.R2_oos_hi - q.R2_oos], color=col, capsize=3, label=f"set {fs}")
+    ax.axhline(0, color="#333", lw=.8); ax.set_xticks(range(3), [TN[t] for t in TN], fontsize=8); ax.set_ylabel("R2 vs training mean", fontsize=8); ax.tick_params(labelsize=8); ax.legend(frameon=False, fontsize=8); ax.grid(axis="y", alpha=.25); [ax.spines[s].set_visible(False) for s in ["top", "right"]]; fig.tight_layout(); st.pyplot(fig); plt.close(fig)
+    hc = C.hormone_counts(R); st.markdown(f"**Do hormones add to phase?** Of {hc['total']} paired comparisons of phase + hormones against phase alone (3 samples x 3 targets x 3 models), {hc['better']} improved prediction and {hc['worse']} made it significantly worse.")
+    st.markdown("**Cross-sample R2** (ridge, against the training-group mean; trained on one group of women, tested on the other):"); st.table(C.cross_table(R))
+    st.markdown(f"**Coverage of the {lvl}% prediction interval** (set D, Bayesian predictive interval):"); st.table(C.coverage_table(R, art))
