@@ -20,7 +20,7 @@ Sidebar: choice of model (ridge or Bayesian ridge point prediction; the interval
 
 ## Where every number comes from
 - Predictions, contributions, sweeps and scenarios: computed from `app/model_artifacts.json` and the entered values.
-- Everything in the Study results tab, the hormone counts and the preset hormone values: read when the page is rendered from `results/phase4_metrics.csv`, `phase4_deltas.csv`, `extE4_coverage.csv`, `ext_e7_metrics.csv`, `ext_e7_sizes.csv` and `phase5_hormones_by_phase_long.csv`. The app does not read the raw data or the `paper/` folder.
+- Everything in the Study results tab, the hormone counts and the preset hormone values: read when the page is rendered from `results/phase4_metrics.csv`, `phase4_deltas.csv`, `extE4_coverage.csv`, `ext_e7_metrics.csv`, `ext_e7_sizes.csv` and `phase5_hormones_by_phase_long.csv`. The app does not read the raw data.
 
 ## Files
 `app.py` (the page), `app_core.py` (the functions it uses), `build_model.py` (fits the final model and writes `model_artifacts.json`; re-run it with `./.venv/bin/python -I app/build_model.py` if the data or models change), `model_artifacts.json`, `requirements.txt` (packages the page imports, for hosted deployment with main file `app/app.py` and Python 3.12), `test_app.py` (`./.venv/bin/python -I app/test_app.py`: tests of the functions, of the result tables and of the page; it also checks that running the app creates or modifies no file).
