@@ -16,7 +16,7 @@ From the project root, with the project's environment:
 - **Study results**: out-of-sample R² (sets A, C, D), hormone-versus-phase counts, cross-sample R², interval coverage and calibration, glossary.
 - **Method lab**: illustrative NumPy examples (gradient descent versus momentum, ridge shrinkage), plus the study's condition numbers.
 
-Sidebar: model (ridge or Bayesian ridge), presentation mode (larger text), link to the source code. The Predict-tab inputs and the model are kept in the page address, so a link restores them; the app stores nothing else.
+Sidebar: model (ridge or Bayesian ridge), presentation mode (larger text), link to the source code. The Predict-tab inputs and the model are kept in the page address, so a link restores them. The app does not save entered values. In the hosted demo they are processed on Streamlit's server, and the Predict-tab inputs appear in the web address when you share it. Run the app locally to keep everything on your machine.
 Only feature set D (phase, hormones, PSST, BDI, BAI) is in the model file; sets A and C appear only as saved study results.
 
 ## Where the numbers come from

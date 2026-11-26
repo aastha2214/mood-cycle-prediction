@@ -9,7 +9,7 @@ Live demo: https://mood-cycle-prediction.streamlit.app
 
 **Dataset.** Pletzer and Noachtar (2023), "Emotion recognition and mood along the menstrual cycle", *Hormones and Behavior* 154:105406; open data on OSF, project `dmhrw` (https://osf.io/dmhrw/). The raw files are not stored in this repository (see "Getting the data"). Analysis set: 271 rows, 160 women (176 rows, 65 women longitudinal; 95 rows, 95 women cross-sectional).
 
-**Status.** Phases 1 to 6 and 8 are done, and Phase 7 extensions E1 (PCA), E2 (Bayesian ridge), E3 (Gaussian Bayes classifier), E4 (prediction intervals), E5 (ablation and learning curves), E7 (cross-sample validation) plus a train-versus-test overfitting check are done. E6 (Streamlit demo) is available in `app/`. *Learning project, not a medical tool.*
+**Status.** Phases 1 to 6 and 8 are done, and Phase 7 extensions E1 (PCA), E2 (Bayesian ridge), E3 (Gaussian Bayes classifier), E4 (prediction intervals), E5 (ablation and learning curves), E7 (cross-sample validation) plus a train-versus-test overfitting check are done. E6 (Streamlit demo) is deployed at https://mood-cycle-prediction.streamlit.app and lives in `app/`. *Learning project, not a medical tool.*
 
 ## Quick start
 ```bash
@@ -34,7 +34,12 @@ The raw data are public (OSF project `dmhrw`, Pletzer & Noachtar 2023) and are k
 `bash run_all.sh` (after the environment and the data are in place, see Quick start) reruns every script with the fixed seed and rebuilds `docs/report.md`, `docs/numbers_provenance.md`, `results/INDEX.md` and this README. `bash check_reproducible.sh` additionally checks that a rerun reproduces every file byte for byte.
 
 ## Demo app
-After `bash run_all.sh` (the app reads only the saved files in `results/` and `app/model_artifacts.json`): `streamlit run app/app.py`. To skip Streamlit's first-run prompt and its usage statistics add `--server.headless true --browser.gatherUsageStats false`. `app/build_model.py` refits the final model to `app/model_artifacts.json`, `app/test_app.py` runs headless tests; see `app/README.md`. The values entered in the app are not stored or sent anywhere.
+Live demo: https://mood-cycle-prediction.streamlit.app
+
+- **Tabs:** Predict, What drives the prediction, Hormone sweep, Compare scenarios, Study results, Method lab.
+- **Extras:** Presentation mode, CSV download, Reset inputs, and shareable links via the web address.
+
+To run it locally after `bash run_all.sh` (the app reads only the saved files in `results/` and `app/model_artifacts.json`): `streamlit run app/app.py`. To skip Streamlit's first-run prompt and its usage statistics add `--server.headless true --browser.gatherUsageStats false`. `app/build_model.py` refits the final model to `app/model_artifacts.json`, `app/test_app.py` runs headless tests; see `app/README.md`. The app does not save entered values. In the hosted demo they are processed on Streamlit's server, and the Predict-tab inputs appear in the web address when you share it. Run the app locally to keep everything on your machine.
 
 ## Approximate runtimes
 The classes below are derived from the reference timings in `docs/runtime_reference.csv`, measured once on the author's laptop while other programs were running, so a quiet machine may be faster; the seconds of your own run are written to `results/logs/timings.csv`.
@@ -82,4 +87,4 @@ The code is released under the MIT licence (`LICENSE`). The licence covers the c
 
 ## Notes
 - The authors' R script in `data/` is used only to understand variable coding; it is never run.
-- The data are public but kept local; nothing is sent anywhere.
+- The data are public but kept local; the analysis scripts send nothing anywhere. The hosted demo is different: values entered there are processed on Streamlit's server (see "Demo app").
